@@ -1,6 +1,4 @@
-"use client";
-
-import { ComponentType, useState } from "react";
+import { ComponentType } from "react";
 import {
   MousePointer,
   MoveUpRight,
@@ -11,16 +9,22 @@ import {
   Type,
   Undo2,
   Redo2,
-  Trash2,
+  PlayIcon,
 } from "lucide-react";
-
 import { useDrawingStore } from "@/store/useDrawingStore";
 import type { DrawingTool } from "@/store/useDrawingStore";
+import { usePresentationStore } from "@/store/usePresentationStore";
 import { useMapStore } from "@/store/useMapStore";
+import { TextStylePanel } from "./TextStylePanel";
+import { Text } from "@/lib/shapes/Text";
 
 export const Navbar = () => {
   const { activeTool, setActiveTool } = useDrawingStore();
-  const { map, shapeManager } = useMapStore();
+  const { startPresentation } = usePresentationStore();
+  const { shapeManager } = useMapStore();
+
+  const selected = shapeManager?.getSelectedShape();
+  const isText = selected instanceof Text;
 
   // Handle tool selection
   const handleToolSelect = (tool: DrawingTool) => {
@@ -45,7 +49,7 @@ export const Navbar = () => {
       {/* Logo and undo/redo buttons */}
       <div className="flex items-center space-x-4">
         <div className="font-bold text-lg text-blue-500">MapDraw</div>
-        <div className="flex space-x-1 text-black">
+        {/* <div className="flex space-x-1 text-black">
           <button
             onClick={handleUndo}
             className="p-1.5 rounded hover:bg-gray-200"
@@ -60,7 +64,7 @@ export const Navbar = () => {
           >
             <Redo2 size={20} />
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* Drawing tools */}
@@ -116,10 +120,18 @@ export const Navbar = () => {
         />
       </div>
 
+      <div className="absolute top-16 right-4 z-50">
+        <TextStylePanel />
+      </div>
+
       {/* Function buttons */}
       <div className="flex space-x-2">
-        <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
-          Presentation Mode
+        <button
+          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex gap-2 items-center"
+          onClick={startPresentation}
+        >
+          <PlayIcon className="size-5"></PlayIcon>
+          Present
         </button>
       </div>
     </div>
