@@ -17,7 +17,7 @@ export const useMapStore = create<MapState>((set) => ({
   shapeManager: null,
   setMap: (map) => set({ map }),
   setShapeManager: (sm) => set({ shapeManager: sm }),
-  isViewportLocked: false,
+  isViewportLocked: true,
   toggleViewportLock: () =>
     set((state) => ({ isViewportLocked: !state.isViewportLocked })),
 }));
