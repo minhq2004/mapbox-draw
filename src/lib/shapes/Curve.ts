@@ -1,6 +1,6 @@
 import mapboxgl from "mapbox-gl";
 import { Shape } from "./Shape";
-import type { LineString, Feature } from "geojson";
+import type { LineString } from "geojson";
 
 export interface CurveData {
   controlPoints: mapboxgl.LngLat[];
@@ -131,16 +131,20 @@ export class Curve extends Shape {
         type: "geojson",
         data: geojson,
       });
-
+    }
+    if (!map.getLayer(this.layerId)) {
       map.addLayer({
         id: this.layerId,
         type: "line",
         source: this.sourceId,
         paint: {
-          "line-color": this.data.color || "#0d6efd",
-          "line-width": 5,
+          "line-color": this.strokeColor,
+          "line-width": this.strokeWidth,
         },
       });
+    } else {
+      map.setPaintProperty(this.layerId, "line-color", this.strokeColor);
+      map.setPaintProperty(this.layerId, "line-width", this.strokeWidth);
     }
   }
 
@@ -148,8 +152,14 @@ export class Curve extends Shape {
     this.data = data;
   }
 
-  containsPoint(): boolean {
-    return false;
+  clone(): Shape {
+    const id = `curve-${Date.now()}`;
+    return new Curve(id, {
+      controlPoints: this.data.controlPoints.map(
+        (p) => new mapboxgl.LngLat(p.lng, p.lat)
+      ),
+      color: this.data.color,
+    });
   }
 
   remove(map: mapboxgl.Map): void {

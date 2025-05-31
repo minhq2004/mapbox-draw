@@ -1,5 +1,3 @@
-// src/lib/shapes/Text.ts
-
 import mapboxgl from "mapbox-gl";
 import { Shape } from "./Shape";
 import type { Point } from "geojson";
@@ -8,9 +6,10 @@ export interface TextData {
   position: mapboxgl.LngLat;
   content: string;
   color?: string;
+  fontSize?: number;
 }
 
-export class TextShape extends Shape {
+export class Text extends Shape {
   data: TextData;
   sourceId: string;
   layerId: string;
@@ -29,15 +28,6 @@ export class TextShape extends Shape {
     };
   }
 
-  getBoundingBoxHandles(): mapboxgl.LngLat[] {
-    // Text không resize được: trả về rỗng
-    return [];
-  }
-
-  resizeByHandle(): void {
-    // Không hỗ trợ resize
-  }
-
   draw(map: mapboxgl.Map): void {
     const geojson = this.toGeoJSON();
 
@@ -46,6 +36,16 @@ export class TextShape extends Shape {
     if (source) {
       source.setData(geojson);
       map.setLayoutProperty(this.layerId, "text-field", this.data.content);
+      map.setLayoutProperty(
+        this.layerId,
+        "text-size",
+        this.data.fontSize ?? 14
+      );
+      map.setPaintProperty(
+        this.layerId,
+        "text-color",
+        this.data.color ?? "#000"
+      );
     } else {
       map.addSource(this.sourceId, {
         type: "geojson",
@@ -58,19 +58,19 @@ export class TextShape extends Shape {
         source: this.sourceId,
         layout: {
           "text-field": this.data.content,
-          "text-size": 14,
+          "text-size": this.data.fontSize ?? 14,
           "text-anchor": "top",
           "text-offset": [0, 0.5],
         },
         paint: {
-          "text-color": "#000",
+          "text-color": this.data.color ?? "#000",
         },
       });
     }
   }
 
-  update(data: TextData): void {
-    this.data = data;
+  update(data: Partial<TextData>): void {
+    this.data = { ...this.data, ...data };
   }
 
   moveByDelta(dx: number, dy: number, map: mapboxgl.Map): void {
@@ -82,8 +82,17 @@ export class TextShape extends Shape {
     if (source) source.setData(this.toGeoJSON());
   }
 
-  containsPoint(): boolean {
-    return false;
+  clone(): Shape {
+    const id = `text-${Date.now()}`;
+    return new Text(id, {
+      position: new mapboxgl.LngLat(
+        this.data.position.lng,
+        this.data.position.lat
+      ),
+      content: this.data.content,
+      color: this.data.color,
+      fontSize: this.data.fontSize,
+    });
   }
 
   remove(map: mapboxgl.Map): void {
@@ -93,5 +102,17 @@ export class TextShape extends Shape {
     if (map.getSource(this.sourceId)) {
       map.removeSource(this.sourceId);
     }
+  }
+
+  containsPoint(): boolean {
+    return false;
+  }
+
+  getBoundingBoxHandles(): mapboxgl.LngLat[] {
+    return []; // Text không resize
+  }
+
+  resizeByHandle(): void {
+    // Không hỗ trợ resize
   }
 }

@@ -1,6 +1,6 @@
 import mapboxgl from "mapbox-gl";
 import { Shape } from "./Shape";
-import type { LineString, Feature, Polygon } from "geojson";
+import type { LineString } from "geojson";
 
 export interface PolylineData {
   coordinates: mapboxgl.LngLat[];
@@ -105,16 +105,20 @@ export class Polyline extends Shape {
         type: "geojson",
         data: geojson,
       });
-
+    }
+    if (!map.getLayer(this.layerId)) {
       map.addLayer({
         id: this.layerId,
         type: "line",
         source: this.sourceId,
         paint: {
-          "line-color": this.data.color || "#0d6efd",
-          "line-width": 5,
+          "line-color": this.strokeColor,
+          "line-width": this.strokeWidth,
         },
       });
+    } else {
+      map.setPaintProperty(this.layerId, "line-color", this.strokeColor);
+      map.setPaintProperty(this.layerId, "line-width", this.strokeWidth);
     }
   }
 
@@ -129,8 +133,14 @@ export class Polyline extends Shape {
     this.draw(map);
   }
 
-  containsPoint(): boolean {
-    return false;
+  clone(): Shape {
+    const id = `polyline-${Date.now()}`;
+    return new Polyline(id, {
+      coordinates: this.data.coordinates.map(
+        (p) => new mapboxgl.LngLat(p.lng, p.lat)
+      ),
+      color: this.data.color,
+    });
   }
 
   remove(map: mapboxgl.Map): void {

@@ -1,5 +1,3 @@
-// src/lib/shapes/Rectangle.ts
-
 import mapboxgl from "mapbox-gl";
 import { Shape } from "./Shape";
 import type { Polygon } from "geojson";
@@ -44,22 +42,24 @@ export class Rectangle extends Shape {
         type: "geojson",
         data: geojson,
       });
+    } else {
+      const source = map.getSource(this.sourceId) as mapboxgl.GeoJSONSource;
+      source.setData(geojson);
     }
 
     if (!map.getLayer(this.layerId)) {
       map.addLayer({
         id: this.layerId,
-        type: "fill",
+        type: "line",
         source: this.sourceId,
         paint: {
-          "fill-color": this.data.color || "#fff",
-          "fill-opacity": 0.9,
-          "fill-outline-color": this.isSelected ? "#f00" : "#000",
+          "line-color": this.strokeColor,
+          "line-width": this.strokeWidth,
         },
       });
     } else {
-      const source = map.getSource(this.sourceId) as mapboxgl.GeoJSONSource;
-      source.setData(geojson);
+      map.setPaintProperty(this.layerId, "line-color", this.strokeColor);
+      map.setPaintProperty(this.layerId, "line-width", this.strokeWidth);
     }
   }
 
@@ -160,8 +160,21 @@ export class Rectangle extends Shape {
     }
   }
 
-  containsPoint(_point: mapboxgl.PointLike): boolean {
-    return false;
+  clone(): Shape {
+    const id = `rectangle-${Date.now()}`;
+    return new Rectangle(id, {
+      coordinates: [
+        new mapboxgl.LngLat(
+          this.data.coordinates[0].lng,
+          this.data.coordinates[0].lat
+        ),
+        new mapboxgl.LngLat(
+          this.data.coordinates[1].lng,
+          this.data.coordinates[1].lat
+        ),
+      ],
+      color: this.data.color,
+    });
   }
 
   remove(map: mapboxgl.Map): void {

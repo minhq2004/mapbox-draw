@@ -1,10 +1,10 @@
 import mapboxgl from "mapbox-gl";
 import { Shape } from "./Shape";
-import type { Feature, Point, Polygon } from "geojson";
+import type { Polygon } from "geojson";
 
 interface CircleData {
   center: mapboxgl.LngLat;
-  radius: number; // đơn vị: mét
+  radius: number;
   rx?: number;
   ry?: number;
   color?: string;
@@ -48,23 +48,24 @@ export class Circle extends Shape {
         type: "geojson",
         data: geojson,
       });
+    } else {
+      const source = map.getSource(this.sourceId) as mapboxgl.GeoJSONSource;
+      source.setData(geojson);
     }
 
     if (!map.getLayer(this.layerId)) {
       map.addLayer({
         id: this.layerId,
-        type: "fill",
+        type: "line",
         source: this.sourceId,
         paint: {
-          "fill-color": "#fff",
-          "fill-opacity": 0.9,
-          "fill-outline-color": this.isSelected ? "#f00" : "#000",
-          "circle-stroke-color": "#f00",
+          "line-color": "#000",
+          "line-width": 4,
         },
       });
     } else {
-      const source = map.getSource(this.sourceId) as mapboxgl.GeoJSONSource;
-      source.setData(geojson);
+      map.setPaintProperty(this.layerId, "line-color", this.strokeColor);
+      map.setPaintProperty(this.layerId, "line-width", this.strokeWidth);
     }
   }
 
@@ -159,8 +160,13 @@ export class Circle extends Shape {
     }
   }
 
-  containsPoint(_point: mapboxgl.PointLike): boolean {
-    return false;
+  clone(): Shape {
+    const id = `circle-${Date.now()}`;
+    return new Circle(id, {
+      center: new mapboxgl.LngLat(this.data.center.lng, this.data.center.lat),
+      radius: this.data.radius,
+      color: this.data.color,
+    });
   }
 
   remove(map: mapboxgl.Map): void {

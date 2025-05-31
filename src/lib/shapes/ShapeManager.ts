@@ -11,9 +11,24 @@ export class ShapeManager {
 
   constructor(private map: mapboxgl.Map) {}
 
+  private listeners: (() => void)[] = [];
+
+  subscribe(listener: () => void) {
+    this.listeners.push(listener);
+  }
+
+  unsubscribe(listener: () => void) {
+    this.listeners = this.listeners.filter((l) => l !== listener);
+  }
+
+  private notifyChange() {
+    for (const listener of this.listeners) listener();
+  }
+
   addShape(shape: Shape): void {
     this.shapes.set(shape.id, shape);
     shape.draw(this.map);
+    this.notifyChange();
   }
 
   removeShape(id: string): void {
@@ -25,6 +40,7 @@ export class ShapeManager {
       this.clearHandles();
       this.selectedShapeId = null;
     }
+    this.notifyChange();
   }
 
   selectShape(id: string): void {
@@ -37,6 +53,7 @@ export class ShapeManager {
       this.selectedShapeId = id;
       this.drawHandlesForSelectedShape();
     }
+    this.notifyChange();
   }
 
   deselectShape(id: string): void {
@@ -45,6 +62,13 @@ export class ShapeManager {
     if (this.selectedShapeId === id) {
       this.selectedShapeId = null;
       this.clearHandles();
+    }
+    this.notifyChange();
+  }
+
+  clearSelection(): void {
+    if (this.selectedShapeId) {
+      this.deselectShape(this.selectedShapeId);
     }
   }
 
@@ -122,5 +146,6 @@ export class ShapeManager {
     if (this.map.getSource(this.handleSourceId)) {
       this.map.removeSource(this.handleSourceId);
     }
+    this.notifyChange();
   }
 }
