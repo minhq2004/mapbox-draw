@@ -1,21 +1,28 @@
-// src/hooks/useSelectTool.ts
-
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { ShapeManager } from "../lib/shapes/ShapeManager";
 import { useDrawingStore } from "../store/useDrawingStore";
+import { Shape } from "@/lib/shapes/Shape";
 
 export const useSelectTool = (
   map: mapboxgl.Map | null,
-  shapeManager: ShapeManager | null
+  shapeManager: ShapeManager | null,
+  options?: { showBoundingBox?: boolean }
 ) => {
   const selectedIdRef = useRef<string | null>(null);
   const dragStartRef = useRef<mapboxgl.LngLat | null>(null);
+  const copiedShapeRef = useRef<Shape | null>(null);
   const resizingHandleIndex = useRef<number | null>(null);
   const { setActiveTool } = useDrawingStore();
 
   useEffect(() => {
     if (!map || !shapeManager) return;
+
+    // Nếu không showBoundingBox thì clear selection và không đăng ký event
+    if (options && options.showBoundingBox === false) {
+      shapeManager.clearSelection?.();
+      return;
+    }
 
     const handleClick = (e: mapboxgl.MapMouseEvent) => {
       const features = map.queryRenderedFeatures(e.point);
@@ -26,16 +33,43 @@ export const useSelectTool = (
         shapeManager.selectShape(id);
         selectedIdRef.current = id;
         setActiveTool("select");
+      } else {
+        shapeManager.clearSelection();
+        selectedIdRef.current = null;
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const isCmd = e.ctrlKey || e.metaKey;
+
+      if (
+        document.activeElement &&
+        document.activeElement.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
         selectedIdRef.current
       ) {
         shapeManager.removeShape(selectedIdRef.current);
         selectedIdRef.current = null;
+      }
+
+      if (isCmd && e.key.toLowerCase() === "c" && selectedIdRef.current) {
+        const shape = shapeManager.getShape(selectedIdRef.current);
+        if (shape) {
+          copiedShapeRef.current = shape.clone();
+        }
+      }
+
+      if (isCmd && e.key.toLowerCase() === "v" && copiedShapeRef.current) {
+        const shape = copiedShapeRef.current.clone();
+        shape.moveByDelta(0.25, -0.25, map!);
+        shapeManager.addShape(shape);
+        shapeManager.selectShape(shape.id);
+        selectedIdRef.current = shape.id;
       }
     };
 
@@ -68,7 +102,7 @@ export const useSelectTool = (
       const id = selectedIdRef.current;
       if (!start || !id) return;
 
-      // Nếu đang resize handle
+      // Case resize handle
       if (resizingHandleIndex.current !== null) {
         const shape = shapeManager.getShape(id);
         if (shape) {
@@ -78,10 +112,11 @@ export const useSelectTool = (
         return;
       }
 
-      // Nếu đang move shape
+      // Case move shape
       const dx = e.lngLat.lng - start.lng;
       const dy = e.lngLat.lat - start.lat;
       shapeManager.moveShapeByDelta(id, dx, dy);
+      shapeManager.drawHandlesForSelectedShape();
       dragStartRef.current = e.lngLat;
     };
 
@@ -104,5 +139,5 @@ export const useSelectTool = (
       map.off("mouseup", handleMouseUp);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [map, shapeManager]);
+  }, [map, shapeManager, options?.showBoundingBox]);
 };

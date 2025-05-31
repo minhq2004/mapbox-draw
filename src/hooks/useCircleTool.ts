@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { ShapeManager } from "../lib/shapes/ShapeManager";
 import { Circle } from "../lib/shapes/Circle";
-import { useDrawingStore } from "../store/useDrawingStore";
 
 export const useCircleTool = (
   map: mapboxgl.Map | null,
@@ -11,8 +10,7 @@ export const useCircleTool = (
 ) => {
   const drawing = useRef(false);
   const startPoint = useRef<mapboxgl.LngLat | null>(null);
-  const tempCircleId = useRef<string | null>(null);
-  const { setActiveTool } = useDrawingStore();
+  const tempCircleRef = useRef<Circle | null>(null);
 
   useEffect(() => {
     if (!map || !shapeManager || !active) return;
@@ -20,50 +18,55 @@ export const useCircleTool = (
     const handleMouseDown = (e: mapboxgl.MapMouseEvent) => {
       drawing.current = true;
       startPoint.current = e.lngLat;
-      const id = `circle-${Date.now()}`;
-      tempCircleId.current = id;
-      const circle = new Circle(id, {
-        center: e.lngLat,
-        radius: 1,
-        color: "#00f",
-      });
-      shapeManager.addShape(circle);
+      tempCircleRef.current = null;
     };
 
     const handleMouseMove = (e: mapboxgl.MapMouseEvent) => {
-      if (!drawing.current || !startPoint.current || !tempCircleId.current)
-        return;
+      if (!drawing.current || !startPoint.current) return;
+
       const center = startPoint.current;
       const radius = center.distanceTo(e.lngLat);
-      const circle = shapeManager.getShape(tempCircleId.current) as Circle;
-      if (circle) {
-        circle.update({
-          center,
-          radius,
-          color: "#00f",
-        });
-        circle.draw(map);
-      }
+      const id = "temp-circle";
+
+      // Chỉ vẽ nếu đủ lớn
+      const MIN_RADIUS = 1;
+      if (radius < MIN_RADIUS) return;
+
+      // Xoá vòng cũ
+      shapeManager.removeShape(id);
+
+      const circle = new Circle(id, {
+        center,
+        radius,
+        color: "#00f",
+      });
+      shapeManager.addShape(circle);
+      tempCircleRef.current = circle;
     };
 
     const handleMouseUp = (e: mapboxgl.MapMouseEvent) => {
-      if (!drawing.current || !startPoint.current || !tempCircleId.current)
-        return;
+      if (!drawing.current || !startPoint.current) return;
+      drawing.current = false;
+
       const center = startPoint.current;
       const radius = center.distanceTo(e.lngLat);
-      const circle = shapeManager.getShape(tempCircleId.current) as Circle;
-      if (circle) {
-        circle.update({
+      startPoint.current = null;
+
+      const id = `circle-${Date.now()}`;
+      const MIN_RADIUS = 1;
+      if (radius < MIN_RADIUS) {
+        shapeManager.removeShape("temp-circle");
+        return;
+      }
+
+      shapeManager.removeShape("temp-circle");
+      shapeManager.addShape(
+        new Circle(id, {
           center,
           radius,
           color: "#00f",
-        });
-        circle.draw(map);
-        shapeManager.selectShape(circle.id);
-      }
-      drawing.current = false;
-      startPoint.current = null;
-      tempCircleId.current = null;
+        })
+      );
     };
 
     map.on("mousedown", handleMouseDown);
@@ -75,5 +78,5 @@ export const useCircleTool = (
       map.off("mousemove", handleMouseMove);
       map.off("mouseup", handleMouseUp);
     };
-  }, [map, shapeManager, active, setActiveTool]);
+  }, [map, shapeManager, active]);
 };

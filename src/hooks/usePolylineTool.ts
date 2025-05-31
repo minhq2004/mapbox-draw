@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { ShapeManager } from "../lib/shapes/ShapeManager";
 import { Polyline } from "../lib/shapes/Polyline";
-import { useDrawingStore } from "../store/useDrawingStore";
 import type { Feature, LineString } from "geojson";
 
 export const usePolylineTool = (

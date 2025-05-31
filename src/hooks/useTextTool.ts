@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { ShapeManager } from "../lib/shapes/ShapeManager";
-import { TextShape } from "../lib/shapes/Text";
-import { useDrawingStore } from "../store/useDrawingStore";
+import { Text } from "../lib/shapes/Text";
+import type { Feature } from "geojson";
 
 export const useTextTool = (
   map: mapboxgl.Map | null,
@@ -11,57 +11,115 @@ export const useTextTool = (
 ) => {
   const startRef = useRef<mapboxgl.Point | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const draggingIdRef = useRef<string | null>(null);
-  const lastDragPos = useRef<mapboxgl.LngLat | null>(null);
+  const [previewId] = useState("text-preview");
 
   useEffect(() => {
     if (!map || !shapeManager) return;
 
+    // --- DRAW PREVIEW DASHLINE BOX ---
     const handleMouseDown = (e: mapboxgl.MapMouseEvent) => {
       if (isActive) {
         startRef.current = e.point;
-        return;
+      } else {
+        // Cho phép drag/move text nếu cần
+        const features = map.queryRenderedFeatures(e.point, {
+          layers: Array.from(map.getStyle().layers ?? [])
+            .filter((l) => l.id.startsWith("text-layer-"))
+            .map((l) => l.id),
+        });
+        const layer = features[0]?.layer?.id;
+        if (layer?.startsWith("text-layer-")) {
+          const id = layer.replace("text-layer-", "");
+        }
       }
+    };
 
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: Array.from(map.getStyle().layers ?? [])
-          .filter((l) => l.id.startsWith("text-layer-"))
-          .map((l) => l.id),
-      });
+    const handleMouseMove = (e: mapboxgl.MapMouseEvent) => {
+      if (!isActive || !startRef.current) return;
 
-      const layer = features[0]?.layer?.id;
-      if (layer?.startsWith("text-layer-")) {
-        const id = layer.replace("text-layer-", "");
-        draggingIdRef.current = id;
-        lastDragPos.current = e.lngLat;
+      const start = startRef.current;
+      const end = e.point;
+      const topLeft = map.unproject(
+        new mapboxgl.Point(Math.min(start.x, end.x), Math.min(start.y, end.y))
+      );
+      const bottomRight = map.unproject(
+        new mapboxgl.Point(Math.max(start.x, end.x), Math.max(start.y, end.y))
+      );
+
+      const polygon: Feature = {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [topLeft.lng, topLeft.lat],
+              [bottomRight.lng, topLeft.lat],
+              [bottomRight.lng, bottomRight.lat],
+              [topLeft.lng, bottomRight.lat],
+              [topLeft.lng, topLeft.lat],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const source = map.getSource(previewId) as mapboxgl.GeoJSONSource;
+      if (source) {
+        source.setData(polygon as any);
+      } else {
+        map.addSource(previewId, {
+          type: "geojson",
+          data: polygon,
+        });
+
+        map.addLayer({
+          id: previewId,
+          type: "line",
+          source: previewId,
+          paint: {
+            "line-color": "#000",
+            "line-width": 1,
+            "line-dasharray": [2, 2],
+          },
+        });
       }
     };
 
     const handleMouseUp = (e: mapboxgl.MapMouseEvent) => {
-      if (isActive && startRef.current) {
-        const end = e.point;
-        const start = startRef.current;
-        startRef.current = null;
+      if (!isActive || !startRef.current) return;
 
-        const left = Math.min(start.x, end.x);
-        const top = Math.min(start.y, end.y);
-        const width = Math.abs(start.x - end.x);
-        const height = Math.abs(start.y - end.y);
+      const start = startRef.current;
+      startRef.current = null;
 
-        if (width < 10 || height < 10) return;
+      const end = e.point;
+      const left = Math.min(start.x, end.x);
+      const top = Math.min(start.y, end.y);
+      const width = Math.abs(start.x - end.x);
+      const height = Math.abs(start.y - end.y);
 
-        const topLeft = map.unproject(new mapboxgl.Point(left, top));
+      // Xoá preview dashline box
+      if (map.getLayer(previewId)) map.removeLayer(previewId);
+      if (map.getSource(previewId)) map.removeSource(previewId);
 
+      if (width < 10 || height < 10) return;
+
+      const canvasRect = map.getCanvas().getBoundingClientRect();
+      const screenX = canvasRect.left + left;
+      const screenY = canvasRect.top + top;
+      const topLeftCoord = map.unproject(new mapboxgl.Point(left, top));
+
+      // Hiển thị textarea đúng vị trí
+      requestAnimationFrame(() => {
         const textarea = document.createElement("textarea");
         Object.assign(textarea.style, {
           position: "absolute",
-          left: `${left}px`,
-          top: `${top}px`,
+          left: `${screenX}px`,
+          top: `${screenY}px`,
           width: `${width}px`,
           height: `${height}px`,
           fontSize: "16px",
-          zIndex: "999",
           color: "black",
+          zIndex: "999",
           border: "1px solid #333",
           resize: "none",
           overflow: "hidden",
@@ -77,17 +135,16 @@ export const useTextTool = (
           if (ke.key === "Enter" && !ke.shiftKey) {
             ke.preventDefault();
             const value = textarea.value.trim();
-            if (value.length > 0) {
+            if (value) {
               const id = `text-${Date.now()}`;
-              const shape = new TextShape(id, {
-                position: topLeft,
+              const shape = new Text(id, {
+                position: topLeftCoord,
                 content: value,
               });
               shapeManager.addShape(shape);
             }
             textarea.remove();
             textareaRef.current = null;
-            useDrawingStore.getState().setActiveTool("select");
           }
         });
 
@@ -95,12 +152,10 @@ export const useTextTool = (
           textarea.remove();
           textareaRef.current = null;
         });
-      }
-
-      draggingIdRef.current = null;
-      lastDragPos.current = null;
+      });
     };
 
+    // --- DOUBLE CLICK TO EDIT EXISTING TEXT ---
     const handleDblClick = (e: mapboxgl.MapMouseEvent) => {
       const features = map.queryRenderedFeatures(e.point, {
         layers: Array.from(map.getStyle().layers ?? [])
@@ -113,11 +168,10 @@ export const useTextTool = (
 
       const id = layer.replace("text-layer-", "");
       const shape = shapeManager.getShape(id);
-      if (!(shape instanceof TextShape)) return;
+      if (!(shape instanceof Text)) return;
 
-      const canvasRect = map.getCanvas().getBoundingClientRect();
-      const screenX = e.originalEvent.clientX - canvasRect.left;
-      const screenY = e.originalEvent.clientY - canvasRect.top;
+      const screenX = e.originalEvent.clientX;
+      const screenY = e.originalEvent.clientY;
 
       const textarea = document.createElement("textarea");
       Object.assign(textarea.style, {
@@ -153,7 +207,7 @@ export const useTextTool = (
 
           // nếu shape đã không còn trong manager, thêm lại
           if (!shapeManager.getShape(shape.id)) {
-            shapeManager.addShape(shape); // re-add vào manager
+            shapeManager.addShape(shape);
           }
 
           // đảm bảo chọn lại & vẽ lại bounding box
@@ -174,13 +228,18 @@ export const useTextTool = (
     };
 
     map.on("mousedown", handleMouseDown);
+    map.on("mousemove", handleMouseMove);
     map.on("mouseup", handleMouseUp);
     map.on("dblclick", handleDblClick);
 
     return () => {
       map.off("mousedown", handleMouseDown);
+      map.off("mousemove", handleMouseMove);
       map.off("mouseup", handleMouseUp);
       map.off("dblclick", handleDblClick);
+
+      if (map.getLayer(previewId)) map.removeLayer(previewId);
+      if (map.getSource(previewId)) map.removeSource(previewId);
 
       if (textareaRef.current) {
         textareaRef.current.remove();

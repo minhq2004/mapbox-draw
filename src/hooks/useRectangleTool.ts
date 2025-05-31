@@ -1,5 +1,3 @@
-// src/hooks/useRectangleTool.ts
-
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { Rectangle } from "../lib/shapes/Rectangle";
@@ -20,7 +18,6 @@ export const useRectangleTool = (
       startPointRef.current = e.lngLat;
       setIsDrawing(true);
     };
-
     const handleMouseMove = (e: mapboxgl.MapMouseEvent) => {
       if (!isDrawing || !startPointRef.current) return;
 
@@ -31,10 +28,6 @@ export const useRectangleTool = (
           mapboxgl.LngLat
         ],
       };
-
-      shapeManager.removeShape("temp-rectangle");
-      const tempRectangle = new Rectangle("temp-rectangle", data);
-      shapeManager.addShape(tempRectangle);
     };
 
     const handleMouseUp = (e: mapboxgl.MapMouseEvent) => {
@@ -42,19 +35,26 @@ export const useRectangleTool = (
       setIsDrawing(false);
 
       const endLngLat = e.lngLat;
+      const start = startPointRef.current;
+
+      // Kiểm tra khoảng cách giữa hai điểm
+      const deltaLng = Math.abs(endLngLat.lng - start.lng);
+      const deltaLat = Math.abs(endLngLat.lat - start.lat);
+
+      // Nếu quá nhỏ => bỏ qua
+      const MIN_DISTANCE = 0.0001; // tuỳ map scale, khoảng vài pixel
+      if (deltaLng < MIN_DISTANCE || deltaLat < MIN_DISTANCE) {
+        startPointRef.current = null;
+        return;
+      }
+
       const id = `rectangle-${Date.now()}`;
       const data = {
-        coordinates: [startPointRef.current, endLngLat] as [
-          mapboxgl.LngLat,
-          mapboxgl.LngLat
-        ],
+        coordinates: [start, endLngLat] as [mapboxgl.LngLat, mapboxgl.LngLat],
       };
 
       shapeManager.removeShape("temp-rectangle");
-
-      const rectangle = new Rectangle(id, data);
-      shapeManager.addShape(rectangle);
-
+      shapeManager.addShape(new Rectangle(id, data));
       startPointRef.current = null;
     };
 

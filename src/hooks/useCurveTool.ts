@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { Curve } from "../lib/shapes/Curve";
 import { ShapeManager } from "../lib/shapes/ShapeManager";
-import { useDrawingStore } from "../store/useDrawingStore";
 import type { Feature } from "geojson";
 
 export const useCurveTool = (
@@ -54,7 +53,6 @@ export const useCurveTool = (
 
       if (map.getLayer(previewLayerId)) map.removeLayer(previewLayerId);
       if (map.getSource(previewLayerId)) map.removeSource(previewLayerId);
-      useDrawingStore.getState().setActiveTool("select");
     };
 
     const handleClick = (e: mapboxgl.MapMouseEvent) => {
