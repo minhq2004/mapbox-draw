@@ -3,7 +3,7 @@
 import { Map } from "@/components/Map";
 import { Navbar } from "@/components/Navbar";
 import { useEffect, useRef, useState } from "react";
-import { SlideList } from "@/components/SlideList";
+import { ShapeList } from "@/components/ShapeList";
 import { usePresentationStore } from "@/store/usePresentationStore";
 import { ShapeStylePanel } from "@/components/ShapeStylePanel";
 import { useMapStore } from "@/store/useMapStore";
@@ -60,8 +60,8 @@ export default function HomePage() {
       <div className="flex flex-1 h-0">
         {/* SlideList bên trái */}
         {!isPresenting && (
-          <div className="flex-2/12 border-r border-gray-300 bg-white overflow-y-auto">
-            <SlideList />
+          <div className="flex-1/5 border-r border-gray-300 bg-white overflow-y-auto">
+            <ShapeList />
           </div>
         )}
         {/* Map chiếm phần còn lại */}
