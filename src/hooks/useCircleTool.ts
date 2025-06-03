@@ -38,7 +38,6 @@ export const useCircleTool = (
       const circle = new Circle(id, {
         center,
         radius,
-        color: "#00f",
       });
       shapeManager.addShape(circle);
       tempCircleRef.current = circle;
@@ -64,7 +63,6 @@ export const useCircleTool = (
         new Circle(id, {
           center,
           radius,
-          color: "#00f",
         })
       );
     };
