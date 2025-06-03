@@ -7,64 +7,25 @@ import {
   RectangleHorizontal,
   Circle,
   Type,
-  Undo2,
-  Redo2,
   PlayIcon,
 } from "lucide-react";
 import { useDrawingStore } from "@/store/useDrawingStore";
 import type { DrawingTool } from "@/store/useDrawingStore";
 import { usePresentationStore } from "@/store/usePresentationStore";
-import { useMapStore } from "@/store/useMapStore";
 import { TextStylePanel } from "./TextStylePanel";
-import { Text } from "@/lib/shapes/Text";
 
 export const Navbar = () => {
   const { activeTool, setActiveTool } = useDrawingStore();
   const { startPresentation } = usePresentationStore();
-  const { shapeManager } = useMapStore();
 
-  const selected = shapeManager?.getSelectedShape();
-  const isText = selected instanceof Text;
-
-  // Handle tool selection
   const handleToolSelect = (tool: DrawingTool) => {
-    // Deselect all shapes when changing tools
     setActiveTool(tool);
-  };
-
-  // Handle undo action
-  const handleUndo = () => {
-    console.log("Undo action");
-    // Will implement history management later
-  };
-
-  // Handle redo action
-  const handleRedo = () => {
-    console.log("Redo action");
-    // Will implement history management later
   };
 
   return (
     <div className="bg-white shadow-md w-full px-4 py-2 flex items-center justify-between">
-      {/* Logo and undo/redo buttons */}
       <div className="flex items-center space-x-4">
         <div className="font-bold text-lg text-blue-500">MapDraw</div>
-        {/* <div className="flex space-x-1 text-black">
-          <button
-            onClick={handleUndo}
-            className="p-1.5 rounded hover:bg-gray-200"
-            title="Undo"
-          >
-            <Undo2 size={20} />
-          </button>
-          <button
-            onClick={handleRedo}
-            className="p-1.5 rounded hover:bg-gray-200"
-            title="Redo"
-          >
-            <Redo2 size={20} />
-          </button>
-        </div> */}
       </div>
 
       {/* Drawing tools */}
@@ -127,7 +88,7 @@ export const Navbar = () => {
       {/* Function buttons */}
       <div className="flex space-x-2">
         <button
-          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex gap-2 items-center"
+          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex gap-2 items-center font-bold"
           onClick={startPresentation}
         >
           <PlayIcon className="size-5"></PlayIcon>
@@ -164,26 +125,5 @@ const ToolButton = ({
     >
       <Icon />
     </button>
-  );
-};
-
-// Component cho mục trong menu
-interface MenuItemProps {
-  label: string;
-  onClick: () => void;
-}
-
-const MenuItem = ({ label, onClick }: MenuItemProps) => {
-  return (
-    <a
-      href="#"
-      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-      onClick={(e) => {
-        e.preventDefault();
-        onClick();
-      }}
-    >
-      {label}
-    </a>
   );
 };

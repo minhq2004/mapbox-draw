@@ -4,6 +4,7 @@ import { useMapStore } from "@/store/useMapStore";
 import { useDrawingStore } from "@/store/useDrawingStore";
 import { useMapDrawingTools } from "@/hooks/useMapDrawingTools";
 import { usePresentationStore } from "@/store/usePresentationStore";
+import { FaLock, FaUnlock } from "react-icons/fa";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 
@@ -83,8 +84,8 @@ export const Map = () => {
       .sort((a, b) => a.presentationOrder! - b.presentationOrder!);
 
     // Hiện các shape theo currentStep
-    ordered.forEach((shape, idx) => {
-      if (idx < currentStep) {
+    ordered.forEach((shape) => {
+      if (shape.presentationOrder! <= currentStep) {
         shape.draw(mapRef.current!);
       } else {
         shape.remove(mapRef.current!);
@@ -152,9 +153,10 @@ export const Map = () => {
           {!isPresenting && (
             <button
               onClick={handleToggleViewport}
-              className="px-4 py-2 bg-white text-black rounded shadow"
+              className="px-4 py-2 bg-white text-blue-500 rounded shadow"
+              title={isViewportLocked ? "Unlock" : "Lock"}
             >
-              {isViewportLocked ? "Unlock viewport" : "Lock viewport"}
+              {isViewportLocked ? <FaUnlock /> : <FaLock />}
             </button>
           )}
         </div>

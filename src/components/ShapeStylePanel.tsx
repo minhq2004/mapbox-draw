@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SketchPicker } from "react-color";
 import { Shape } from "@/lib/shapes/Shape";
 import { useMapStore } from "@/store/useMapStore";
+import { LayerOrderControls } from "./LayerOrderControls";
 
 export const ShapeStylePanel = ({ shape }: { shape: Shape }) => {
   const { map } = useMapStore();
@@ -9,6 +10,34 @@ export const ShapeStylePanel = ({ shape }: { shape: Shape }) => {
   // controlled state
   const [strokeColor, setStrokeColor] = useState(shape.strokeColor || "#000");
   const [strokeWidth, setStrokeWidth] = useState(shape.strokeWidth || 1);
+
+  const [pos, setPos] = useState({ x: 100, y: 100 });
+  const [dragging, setDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    dragOffset.current = {
+      x: e.clientX - pos.x,
+      y: e.clientY - pos.y,
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
+  const onMouseMove = (e: MouseEvent) => {
+    if (!dragging) return;
+    setPos({
+      x: e.clientX - dragOffset.current.x,
+      y: e.clientY - dragOffset.current.y,
+    });
+  };
+
+  const onMouseUp = () => {
+    setDragging(false);
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onMouseUp);
+  };
 
   // Sync state if shape changes
   useEffect(() => {
@@ -22,15 +51,10 @@ export const ShapeStylePanel = ({ shape }: { shape: Shape }) => {
     shape.draw(map!);
   };
 
-  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const width = parseFloat(e.target.value);
-    setStrokeWidth(width);
-    shape.strokeWidth = width;
-    shape.draw(map!);
-  };
+  const commonStrokeWidths = [1, 2, 4, 8, 12, 16, 24, 32, 48, 72, 96];
 
   return (
-    <div className="p-3 bg-white border rounded shadow w-64 text-black">
+    <div className="p-4 bg-white border rounded w-64 text-black shadow-2xl">
       <h3 className="font-bold mb-2">Style</h3>
 
       <div className="mb-3">
@@ -41,17 +65,42 @@ export const ShapeStylePanel = ({ shape }: { shape: Shape }) => {
       <div className="mb-3 items-center">
         <label className="block mb-1">Stroke Width</label>
         <div className="flex items-center gap-2">
+          <select
+            className="border px-1 py-1"
+            value={commonStrokeWidths.includes(strokeWidth) ? strokeWidth : ""}
+            onChange={(e) => {
+              const val = parseInt(e.target.value, 10);
+              setStrokeWidth(val);
+              shape.strokeWidth = val;
+              shape.draw(map!);
+            }}
+          >
+            <option value="">Custom</option>
+            {commonStrokeWidths.map((val) => (
+              <option key={val} value={val}>
+                {val}px
+              </option>
+            ))}
+          </select>
           <input
-            type="range"
+            type="number"
             min={1}
-            max={10}
+            max={200}
             step={1}
+            className="w-16 border px-1 py-1"
             value={strokeWidth}
-            onChange={handleWidthChange}
+            onChange={(e) => {
+              const val = parseInt(e.target.value, 10) || 1;
+              setStrokeWidth(val);
+              shape.strokeWidth = val;
+              shape.draw(map!);
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
           />
-          <span>{strokeWidth}px</span>
+          <span>px</span>
         </div>
       </div>
+      <LayerOrderControls shape={shape} />
     </div>
   );
 };
