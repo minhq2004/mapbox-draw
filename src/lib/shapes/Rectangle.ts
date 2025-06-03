@@ -4,7 +4,6 @@ import type { Polygon } from "geojson";
 
 interface RectangleData {
   coordinates: [mapboxgl.LngLat, mapboxgl.LngLat];
-  color?: string;
 }
 
 export class Rectangle extends Shape {
@@ -162,7 +161,7 @@ export class Rectangle extends Shape {
 
   clone(): Shape {
     const id = `rectangle-${Date.now()}`;
-    return new Rectangle(id, {
+    const cloned = new Rectangle(id, {
       coordinates: [
         new mapboxgl.LngLat(
           this.data.coordinates[0].lng,
@@ -173,8 +172,10 @@ export class Rectangle extends Shape {
           this.data.coordinates[1].lat
         ),
       ],
-      color: this.data.color,
     });
+    cloned.strokeColor = this.strokeColor;
+    cloned.strokeWidth = this.strokeWidth;
+    return cloned;
   }
 
   remove(map: mapboxgl.Map): void {

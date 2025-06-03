@@ -38,7 +38,6 @@ export class ShapeManager {
     this.shapes.delete(id);
     if (this.selectedShapeId === id) {
       this.clearHandles();
-      this.selectedShapeId = null;
     }
     this.notifyChange();
   }

@@ -1,6 +1,6 @@
 import mapboxgl from "mapbox-gl";
 import { Shape } from "./Shape";
-import type { Geometry, GeometryCollection, Polygon } from "geojson";
+import type { MultiLineString } from "geojson";
 
 export interface ArrowData {
   anchors: [mapboxgl.LngLat, mapboxgl.LngLat, mapboxgl.LngLat];
@@ -21,70 +21,62 @@ export class Arrow extends Shape {
     this.layerId = `arrow-layer-${id}`;
   }
 
-  getGeoJSONGeometry(): Geometry {
-    const {
-      anchors,
-      thickness = 0.1,
-      headLength = 0.5,
-      headWidth = 0.5,
-    } = this.data;
-
+  getGeoJSONGeometry(): MultiLineString {
+    const { anchors, headLength = 0.2, headWidth = 0.2 } = this.data;
     const [p0, p1, p2] = anchors;
     const curve = getQuadraticBezierPoints(p0, p1, p2, 30);
-    const head = createArrowHead(
-      p2,
-      curve[curve.length - 2],
-      headWidth,
-      headLength
-    );
-    const body = createArrowBody(curve, thickness);
+    const lineCoords = curve.map(([lng, lat]) => [lng, lat]);
+
+    // Scale head theo linewidth
+    const scale = this.strokeWidth || 1;
+    const scaledHeadLength = headLength * scale * 0.3; // 1.5 là hệ số, bạn có thể chỉnh
+    const scaledHeadWidth = headWidth * scale * 0.3; // 1.2 là hệ số, bạn có thể chỉnh
+
+    // Tính toán đầu mũi tên (arrow head)
+    const [bx, by] = curve[curve.length - 2];
+    const [tx, ty] = curve[curve.length - 1];
+    const angle = Math.atan2(ty - by, tx - bx);
+
+    // Hai nhánh chữ V của đầu mũi tên
+    const left: [number, number] = [
+      tx -
+        scaledHeadLength * Math.cos(angle) +
+        scaledHeadWidth * Math.sin(angle),
+      ty -
+        scaledHeadLength * Math.sin(angle) -
+        scaledHeadWidth * Math.cos(angle),
+    ];
+    const right: [number, number] = [
+      tx -
+        scaledHeadLength * Math.cos(angle) -
+        scaledHeadWidth * Math.sin(angle),
+      ty -
+        scaledHeadLength * Math.sin(angle) +
+        scaledHeadWidth * Math.cos(angle),
+    ];
 
     return {
-      type: "GeometryCollection",
-      geometries: [body, head],
-    };
-  }
-  toGeoJSON(): GeoJSON.Feature<GeometryCollection> {
-    const {
-      anchors,
-      thickness = 0.2,
-      headLength = 0.3,
-      headWidth = 0.3,
-    } = this.data;
-
-    const [p0, p1, p2] = anchors;
-    const coords = getQuadraticBezierPoints(p0, p1, p2, 30);
-
-    const head = createArrowHead(
-      p2,
-      coords[coords.length - 2],
-      headWidth,
-      headLength
-    );
-    const body = createArrowBody(coords, thickness);
-
-    return {
-      type: "Feature",
-      geometry: {
-        type: "GeometryCollection",
-        geometries: [body, head],
-      },
-      properties: {},
+      type: "MultiLineString",
+      coordinates: [
+        lineCoords, // thân
+        [left, [tx, ty], right],
+      ],
     };
   }
 
   draw(map: mapboxgl.Map): void {
     const geojson = this.toGeoJSON();
-    const source = map.getSource(this.sourceId) as mapboxgl.GeoJSONSource;
 
-    if (source) {
-      source.setData(geojson);
-    } else {
+    if (!map.getSource(this.sourceId)) {
       map.addSource(this.sourceId, {
         type: "geojson",
         data: geojson,
       });
+    } else {
+      const source = map.getSource(this.sourceId) as mapboxgl.GeoJSONSource;
+      source.setData(geojson);
     }
+
     if (!map.getLayer(this.layerId)) {
       map.addLayer({
         id: this.layerId,
@@ -116,7 +108,7 @@ export class Arrow extends Shape {
 
   clone(): Shape {
     const id = `arrow-${Date.now()}`;
-    return new Arrow(id, {
+    const clonned = new Arrow(id, {
       anchors: this.data.anchors.map(
         (p) => new mapboxgl.LngLat(p.lng, p.lat)
       ) as [mapboxgl.LngLat, mapboxgl.LngLat, mapboxgl.LngLat],
@@ -124,6 +116,9 @@ export class Arrow extends Shape {
       headLength: this.data.headLength,
       headWidth: this.data.headWidth,
     });
+    clonned.strokeColor = this.strokeColor;
+    clonned.strokeWidth = this.strokeWidth;
+    return clonned;
   }
 
   remove(map: mapboxgl.Map): void {
@@ -131,12 +126,25 @@ export class Arrow extends Shape {
     if (map.getSource(this.sourceId)) map.removeSource(this.sourceId);
   }
 
-  containsPoint(): boolean {
-    return false;
-  }
-
   getBoundingBoxHandles(): mapboxgl.LngLat[] {
-    return this.data.anchors;
+    // 3 anchor
+    const anchors = this.data.anchors;
+    // 4 góc bounding box
+    const allPoints = anchors.map((p) => [p.lng, p.lat]);
+    const xs = allPoints.map((p) => p[0]);
+    const ys = allPoints.map((p) => p[1]);
+    const minX = Math.min(...xs),
+      maxX = Math.max(...xs);
+    const minY = Math.min(...ys),
+      maxY = Math.max(...ys);
+    // 4 góc: TL, TR, BR, BL
+    const corners = [
+      new mapboxgl.LngLat(minX, maxY), // top-left
+      new mapboxgl.LngLat(maxX, maxY), // top-right
+      new mapboxgl.LngLat(maxX, minY), // bottom-right
+      new mapboxgl.LngLat(minX, minY), // bottom-left
+    ];
+    return [...anchors, ...corners];
   }
 
   resizeByHandle(
@@ -144,8 +152,100 @@ export class Arrow extends Shape {
     newPoint: mapboxgl.LngLat,
     map: mapboxgl.Map
   ): void {
-    this.data.anchors[index] = newPoint;
-    this.draw(map); // cập nhật lại hình
+    if (index < 3) {
+      // Anchor: chỉnh như cũ
+      this.data.anchors[index] = newPoint;
+    } else {
+      // Scale theo bounding box
+      // 3 anchor gốc
+      const anchors = this.data.anchors;
+      // 4 góc cũ
+      const allPoints = anchors.map((p) => [p.lng, p.lat]);
+      const xs = allPoints.map((p) => p[0]);
+      const ys = allPoints.map((p) => p[1]);
+      const minX = Math.min(...xs),
+        maxX = Math.max(...xs);
+      const minY = Math.min(...ys),
+        maxY = Math.max(...ys);
+
+      // Xác định góc nào đang kéo
+      // 3: TL, 4: TR, 5: BR, 6: BL
+      let oldCorner: [number, number];
+      let fixedCorner: [number, number];
+      switch (index) {
+        case 3: // top-left
+          oldCorner = [minX, maxY];
+          fixedCorner = [maxX, minY];
+          break;
+        case 4: // top-right
+          oldCorner = [maxX, maxY];
+          fixedCorner = [minX, minY];
+          break;
+        case 5: // bottom-right
+          oldCorner = [maxX, minY];
+          fixedCorner = [minX, maxY];
+          break;
+        case 6: // bottom-left
+          oldCorner = [minX, minY];
+          fixedCorner = [maxX, maxY];
+          break;
+        default:
+          return;
+      }
+
+      // Scale các anchor theo 2 góc: fixedCorner (giữ nguyên), oldCorner (kéo thành newPoint)
+      const oldW = oldCorner[0] - fixedCorner[0];
+      const oldH = oldCorner[1] - fixedCorner[1];
+      const newW = newPoint.lng - fixedCorner[0];
+      const newH = newPoint.lat - fixedCorner[1];
+
+      // Tránh chia 0
+      const scaleX = oldW !== 0 ? newW / oldW : 1;
+      const scaleY = oldH !== 0 ? newH / oldH : 1;
+
+      // Scale từng anchor
+      this.data.anchors = anchors.map((p) => {
+        const x = fixedCorner[0] + (p.lng - fixedCorner[0]) * scaleX;
+        const y = fixedCorner[1] + (p.lat - fixedCorner[1]) * scaleY;
+        return new mapboxgl.LngLat(x, y);
+      }) as [mapboxgl.LngLat, mapboxgl.LngLat, mapboxgl.LngLat];
+    }
+    this.draw(map);
+  }
+
+  static fromJSON(obj: any): Arrow {
+    const anchors = obj.data.anchors.map(
+      (p: any) => new mapboxgl.LngLat(p.lng, p.lat)
+    ) as [mapboxgl.LngLat, mapboxgl.LngLat, mapboxgl.LngLat];
+    const arrow = new Arrow(obj.id, {
+      anchors,
+      thickness: obj.data.thickness,
+      headLength: obj.data.headLength,
+      headWidth: obj.data.headWidth,
+    });
+    arrow.strokeColor = obj.strokeColor;
+    arrow.strokeWidth = obj.strokeWidth;
+    arrow.presentationOrder = obj.presentationOrder ?? null;
+    return arrow;
+  }
+
+  toJSON(): any {
+    return {
+      id: this.id,
+      type: this.type,
+      data: {
+        anchors: this.data.anchors.map((p) => ({
+          lng: p.lng,
+          lat: p.lat,
+        })),
+        thickness: this.data.thickness,
+        headLength: this.data.headLength,
+        headWidth: this.data.headWidth,
+      },
+      strokeColor: this.strokeColor,
+      strokeWidth: this.strokeWidth,
+      presentationOrder: this.presentationOrder,
+    };
   }
 }
 
@@ -156,62 +256,13 @@ function getQuadraticBezierPoints(
   p2: mapboxgl.LngLat,
   steps: number
 ): [number, number][] {
-  const points: [number, number][] = [];
+  const pts: [number, number][] = [];
   for (let t = 0; t <= 1; t += 1 / steps) {
     const x =
       (1 - t) ** 2 * p0.lng + 2 * (1 - t) * t * p1.lng + t ** 2 * p2.lng;
     const y =
       (1 - t) ** 2 * p0.lat + 2 * (1 - t) * t * p1.lat + t ** 2 * p2.lat;
-    points.push([x, y]);
+    pts.push([x, y]);
   }
-  return points;
-}
-
-// Helper function: Arrow body (polygon around curve)
-function createArrowBody(
-  curve: [number, number][],
-  thickness: number
-): Polygon {
-  const left: [number, number][] = [];
-  const right: [number, number][] = [];
-
-  for (let i = 0; i < curve.length - 1; i++) {
-    const [x1, y1] = curve[i];
-    const [x2, y2] = curve[i + 1];
-    const angle = Math.atan2(y2 - y1, x2 - x1);
-    const dx = (thickness / 2) * Math.sin(angle);
-    const dy = (thickness / 2) * -Math.cos(angle);
-    left.push([x1 + dx, y1 + dy]);
-    right.unshift([x1 - dx, y1 - dy]);
-  }
-
-  return {
-    type: "Polygon",
-    coordinates: [[...left, ...right, left[0]]],
-  };
-}
-
-// Helper function: Arrow head (triangle polygon)
-function createArrowHead(
-  tip: mapboxgl.LngLat,
-  before: [number, number],
-  width: number,
-  length: number
-): Polygon {
-  const angle = Math.atan2(tip.lat - before[1], tip.lng - before[0]);
-
-  const left = [
-    tip.lng - length * Math.cos(angle) + width * Math.sin(angle),
-    tip.lat - length * Math.sin(angle) - width * Math.cos(angle),
-  ];
-
-  const right = [
-    tip.lng - length * Math.cos(angle) - width * Math.sin(angle),
-    tip.lat - length * Math.sin(angle) + width * Math.cos(angle),
-  ];
-
-  return {
-    type: "Polygon",
-    coordinates: [[[tip.lng, tip.lat], left, right, [tip.lng, tip.lat]]],
-  };
+  return pts;
 }

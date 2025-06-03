@@ -135,12 +135,15 @@ export class Polyline extends Shape {
 
   clone(): Shape {
     const id = `polyline-${Date.now()}`;
-    return new Polyline(id, {
+    const cloned = new Polyline(id, {
       coordinates: this.data.coordinates.map(
         (p) => new mapboxgl.LngLat(p.lng, p.lat)
       ),
       color: this.data.color,
     });
+    cloned.strokeColor = this.strokeColor;
+    cloned.strokeWidth = this.strokeWidth;
+    return cloned;
   }
 
   remove(map: mapboxgl.Map): void {

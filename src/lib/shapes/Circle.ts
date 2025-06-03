@@ -7,7 +7,6 @@ interface CircleData {
   radius: number;
   rx?: number;
   ry?: number;
-  color?: string;
 }
 
 export class Circle extends Shape {
@@ -59,8 +58,8 @@ export class Circle extends Shape {
         type: "line",
         source: this.sourceId,
         paint: {
-          "line-color": "#000",
-          "line-width": 4,
+          "line-color": this.strokeColor,
+          "line-width": this.strokeWidth,
         },
       });
     } else {
@@ -162,11 +161,15 @@ export class Circle extends Shape {
 
   clone(): Shape {
     const id = `circle-${Date.now()}`;
-    return new Circle(id, {
+    const cloned = new Circle(id, {
       center: new mapboxgl.LngLat(this.data.center.lng, this.data.center.lat),
       radius: this.data.radius,
-      color: this.data.color,
+      rx: this.data.rx,
+      ry: this.data.ry,
     });
+    cloned.strokeColor = this.strokeColor;
+    cloned.strokeWidth = this.strokeWidth;
+    return cloned;
   }
 
   remove(map: mapboxgl.Map): void {

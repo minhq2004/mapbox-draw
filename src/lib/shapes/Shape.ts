@@ -13,7 +13,6 @@ export interface ShapeProps {
   id: string;
   type: ShapeType;
   isSelected: boolean;
-  data: unknown;
 }
 
 export abstract class Shape {
@@ -23,11 +22,13 @@ export abstract class Shape {
   strokeColor: string = "#000";
   strokeWidth: number = 4;
   presentationOrder: number | null = null;
+  layerId: string;
 
   constructor(id: string, type: ShapeType) {
     this.id = id;
     this.type = type;
     this.isSelected = false;
+    this.layerId = `${type}-layer-${id}`;
   }
 
   abstract draw(map: mapboxgl.Map): void;

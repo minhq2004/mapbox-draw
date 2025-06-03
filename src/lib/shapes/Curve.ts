@@ -4,7 +4,6 @@ import type { LineString } from "geojson";
 
 export interface CurveData {
   controlPoints: mapboxgl.LngLat[];
-  color?: string;
 }
 
 export class Curve extends Shape {
@@ -154,12 +153,14 @@ export class Curve extends Shape {
 
   clone(): Shape {
     const id = `curve-${Date.now()}`;
-    return new Curve(id, {
+    const cloned = new Curve(id, {
       controlPoints: this.data.controlPoints.map(
         (p) => new mapboxgl.LngLat(p.lng, p.lat)
       ),
-      color: this.data.color,
     });
+    cloned.strokeColor = this.strokeColor;
+    cloned.strokeWidth = this.strokeWidth;
+    return cloned;
   }
 
   remove(map: mapboxgl.Map): void {
