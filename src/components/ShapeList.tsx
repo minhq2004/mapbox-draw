@@ -64,7 +64,7 @@ function SortableItem({
         cursor: "grab",
       }}
       className={`flex items-center justify-between p-1 rounded group ${
-        selected ? "bg-blue-100" : "hover:bg-gray-100"
+        selected ? "bg-red-200" : "hover:bg-red-100"
       }`}
       onClick={onSelect}
       tabIndex={0}

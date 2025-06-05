@@ -25,7 +25,7 @@ export const Navbar = () => {
   return (
     <div className="bg-white shadow-md w-full px-4 py-2 flex items-center justify-between">
       <div className="flex items-center space-x-4">
-        <div className="font-bold text-lg text-blue-500">MapDraw</div>
+        <div className="font-bold text-xl text-[#f3353d]">MapDraw</div>
       </div>
 
       {/* Drawing tools */}
@@ -88,7 +88,7 @@ export const Navbar = () => {
       {/* Function buttons */}
       <div className="flex space-x-2">
         <button
-          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex gap-2 items-center font-bold"
+          className="px-3 py-1 bg-[#f3353d] text-white rounded hover:bg-[#f3353edd] flex gap-2 items-center font-bold"
           onClick={startPresentation}
         >
           <PlayIcon className="size-5"></PlayIcon>
@@ -118,7 +118,7 @@ const ToolButton = ({
   return (
     <button
       className={`px-3 py-1 rounded text-black ${
-        active ? "bg-blue-200" : "hover:bg-gray-200"
+        active ? "bg-red-500 text-white" : "hover:bg-red-200"
       }`}
       onClick={onClick}
       title={label}

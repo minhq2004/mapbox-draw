@@ -153,7 +153,7 @@ export const Map = () => {
           {!isPresenting && (
             <button
               onClick={handleToggleViewport}
-              className="px-4 py-2 bg-white text-blue-500 rounded shadow"
+              className="px-4 py-2 bg-white text-[#f3353d] rounded shadow"
               title={isViewportLocked ? "Unlock" : "Lock"}
             >
               {isViewportLocked ? <FaUnlock /> : <FaLock />}
