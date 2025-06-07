@@ -242,7 +242,9 @@ export const ShapeList = () => {
   return (
     <div className="p-4 space-y-2 ">
       <h2 className="font-bold mb-2 text-black">
-        Layers: {shapeManager?.getAllShapes().length} shape
+        Layers{" "}
+        {(shapeManager?.getAllShapes()?.length ?? 0) > 0 &&
+          ": " + shapeManager?.getAllShapes()?.length + " shape"}{" "}
       </h2>
       <DndContext
         sensors={sensors}
