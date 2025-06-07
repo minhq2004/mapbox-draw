@@ -15,9 +15,14 @@ export type DrawingTool =
 interface DrawingState {
   activeTool: DrawingTool;
   setActiveTool: (tool: DrawingTool) => void;
+  forceUpdate: number;
+  triggerForceUpdate: () => void;
 }
 
 export const useDrawingStore = create<DrawingState>((set) => ({
   activeTool: "select",
   setActiveTool: (tool) => set({ activeTool: tool }),
+  forceUpdate: 0,
+  triggerForceUpdate: () =>
+    set((state) => ({ forceUpdate: state.forceUpdate + 1 })),
 }));

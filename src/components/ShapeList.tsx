@@ -26,6 +26,7 @@ function SortableItem({
   onDelete,
   onSetOrder,
   onToggleStep,
+  maxOrder,
 }: {
   shape: Shape;
   selected: boolean;
@@ -90,7 +91,10 @@ function SortableItem({
               value={orderValue}
               autoFocus
               min={1}
-              onChange={(e) => setOrderValue(e.target.value)}
+              onChange={(e) => {
+                setOrderValue(e.target.value);
+                e.stopPropagation();
+              }}
               onBlur={() => {
                 setEditingOrder(false);
                 const val = parseInt(orderValue as string, 10);
@@ -108,7 +112,6 @@ function SortableItem({
             <button
               className="text-xs hover:text-blue-600 border rounded px-1"
               onClick={(e) => {
-                e.stopPropagation();
                 setEditingOrder(true);
               }}
             >
@@ -140,8 +143,9 @@ function SortableItem({
 }
 
 export const ShapeList = () => {
-  const { shapeManager } = useMapStore();
+  const { shapeManager, map } = useMapStore();
   const [shapes, setShapes] = useState<Shape[]>([]);
+  const { triggerForceUpdate } = useDrawingStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -172,11 +176,22 @@ export const ShapeList = () => {
 
     const newShapes = arrayMove(shapes, oldIndex, newIndex);
 
-    // Cập nhật lại thứ tự trong shapeManager
-    // Xoá hết, add lại theo thứ tự mới
-    if (!shapeManager) return;
-    shapes.forEach((s) => shapeManager.removeShape(s.id));
-    newShapes.forEach((s) => shapeManager.addShape(s));
+    // Cập nhật lại thứ tự trong shapeManager và đồng bộ thứ tự layer trên map
+    if (shapeManager && map && shapeManager.setShapes) {
+      shapeManager.setShapes(newShapes);
+
+      // Đồng bộ lại thứ tự layer trên mapbox
+      for (let i = 0; i < newShapes.length; i++) {
+        const layerId = newShapes[i].layerId;
+        const beforeLayerId =
+          i < newShapes.length - 1 ? newShapes[i + 1].layerId : undefined;
+        try {
+          map.moveLayer(layerId, beforeLayerId);
+        } catch (e) {}
+      }
+      triggerForceUpdate();
+    }
+
     setShapes([...newShapes]);
   };
 
@@ -190,7 +205,6 @@ export const ShapeList = () => {
   const handleDelete = (id: string) => {
     if (!shapeManager) return;
     shapeManager.removeShape(id);
-    // Không cần setShapes, sẽ tự update qua subscribe
   };
 
   const handleSetOrder = (id: string, order: number) => {

@@ -7,6 +7,7 @@ import {
   RiBringToFront,
 } from "react-icons/ri";
 import React, { useState } from "react";
+import { useDrawingStore } from "@/store/useDrawingStore";
 
 interface Props {
   shape: Shape;
@@ -14,68 +15,52 @@ interface Props {
 
 export const LayerOrderControls = ({ shape }: Props) => {
   const { shapeManager, map } = useMapStore();
-  const [_, setForceUpdate] = useState(0); // ép re-render
+  const { triggerForceUpdate } = useDrawingStore();
 
   if (!shapeManager || !map) return null;
 
-  // Luôn lấy shapes mới nhất mỗi lần render
   const shapes = shapeManager.getAllShapes();
   const idx = shapes.findIndex((s: Shape) => s.id === shape.id);
 
-  // Hàm cập nhật lại thứ tự và vẽ lại
-  const updateOrder = (newShapes: Shape[]) => {
-    // Xóa tất cả shape khỏi map và khỏi shapeManager
-    shapeManager.getAllShapes().forEach((s) => {
-      s.remove(map);
-      shapeManager.removeShape(s.id);
-    });
-    // Thêm lại theo thứ tự mới
-    newShapes.forEach((s) => shapeManager.addShape(s));
-    // Giữ selection
-    shapeManager.selectShape(shape.id);
-    setForceUpdate((v) => v + 1); // ép re-render để cập nhật trạng thái disable
+  // Di chuyển shape trong mảng và cập nhật thứ tự layer trên map
+  const moveShape = (from: number, to: number) => {
+    if (from === to) return;
+    const newShapes = [...shapes];
+    const [removed] = newShapes.splice(from, 1);
+    newShapes.splice(to, 0, removed);
+
+    // Cập nhật lại thứ tự layer trên mapbox (chỉ cần gọi moveLayer cho shape vừa di chuyển)
+    const movingLayerId = removed.layerId;
+    const beforeLayerId =
+      to < newShapes.length - 1 ? newShapes[to + 1].layerId : undefined;
+    try {
+      map.moveLayer(movingLayerId, beforeLayerId);
+    } catch (e) {}
+
+    // Nếu bạn cần đồng bộ lại shapes trong shapeManager, hãy cập nhật lại ở đây (nếu có hàm setShapes)
+    shapeManager.setShapes(newShapes);
+
+    triggerForceUpdate();
   };
 
   const bringToFront = () => {
-    const shapesNow = shapeManager.getAllShapes();
-    const idxNow = shapesNow.findIndex((s) => s.id === shape.id);
-    if (idxNow === shapesNow.length - 1) return;
-    const newShapes = shapesNow.filter((s) => s.id !== shape.id);
-    newShapes.push(shape);
-    updateOrder(newShapes);
+    if (idx === shapes.length - 1) return;
+    moveShape(idx, shapes.length - 1);
   };
 
   const bringForward = () => {
-    const shapesNow = shapeManager.getAllShapes();
-    const idxNow = shapesNow.findIndex((s) => s.id === shape.id);
-    if (idxNow === shapesNow.length - 1) return;
-    const newShapes = [...shapesNow];
-    [newShapes[idxNow], newShapes[idxNow + 1]] = [
-      newShapes[idxNow + 1],
-      newShapes[idxNow],
-    ];
-    updateOrder(newShapes);
+    if (idx === shapes.length - 1) return;
+    moveShape(idx, idx + 1);
   };
 
   const sendBackward = () => {
-    const shapesNow = shapeManager.getAllShapes();
-    const idxNow = shapesNow.findIndex((s) => s.id === shape.id);
-    if (idxNow === 0) return;
-    const newShapes = [...shapesNow];
-    [newShapes[idxNow], newShapes[idxNow - 1]] = [
-      newShapes[idxNow - 1],
-      newShapes[idxNow],
-    ];
-    updateOrder(newShapes);
+    if (idx === 0) return;
+    moveShape(idx, idx - 1);
   };
 
   const sendToBack = () => {
-    const shapesNow = shapeManager.getAllShapes();
-    const idxNow = shapesNow.findIndex((s) => s.id === shape.id);
-    if (idxNow === 0) return;
-    const newShapes = shapesNow.filter((s) => s.id !== shape.id);
-    newShapes.unshift(shape);
-    updateOrder(newShapes);
+    if (idx === 0) return;
+    moveShape(idx, 0);
   };
 
   return (

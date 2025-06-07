@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { useMapStore } from "@/store/useMapStore";
-import { useDrawingStore } from "@/store/useDrawingStore";
 import { useMapDrawingTools } from "@/hooks/useMapDrawingTools";
 import { usePresentationStore } from "@/store/usePresentationStore";
 import { FaLock, FaUnlock } from "react-icons/fa";
@@ -14,12 +13,9 @@ export const Map = () => {
 
   const { isViewportLocked, toggleViewportLock, shapeManager } = useMapStore();
   const { isPresenting, currentStep, setStep } = usePresentationStore();
-  const { activeTool } = useDrawingStore();
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
-
-    console.log("Initializing map");
 
     // Initialize map
     mapRef.current = new mapboxgl.Map({
@@ -98,22 +94,33 @@ export const Map = () => {
     if (!isPresenting || !shapeManager) return;
 
     const all = shapeManager.getAllShapes();
-    const ordered = all
-      .filter((s) => s.presentationOrder !== null)
-      .sort((a, b) => a.presentationOrder! - b.presentationOrder!);
+    const orderedSteps = Array.from(
+      new Set(
+        all
+          .filter((s) => s.presentationOrder !== null)
+          .map((s) => s.presentationOrder!)
+      )
+    ).sort((a, b) => a - b);
+
+    orderedSteps.unshift(0);
 
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" && currentStep < ordered.length) {
-        setStep(currentStep + 1);
+      const idx = orderedSteps.indexOf(currentStep);
+
+      if (e.key === "ArrowRight" && idx < orderedSteps.length - 1) {
+        const next = orderedSteps[idx + 1];
+        setStep(next);
       }
-      if (e.key === "ArrowLeft" && currentStep > 0) {
-        setStep(currentStep - 1);
+
+      if (e.key === "ArrowLeft" && idx > 0) {
+        const prev = orderedSteps[idx - 1];
+        setStep(prev);
       }
     };
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isPresenting, currentStep, setStep, shapeManager]);
+  }, [isPresenting, currentStep, shapeManager]);
 
   // Toggle viewport lock
   const handleToggleViewport = () => {

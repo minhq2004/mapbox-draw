@@ -8,6 +8,7 @@ import { usePresentationStore } from "@/store/usePresentationStore";
 import { ShapeStylePanel } from "@/components/ShapeStylePanel";
 import { useMapStore } from "@/store/useMapStore";
 import { Shape } from "@/lib/shapes/Shape";
+import { TextStylePanel } from "@/components/TextStylePanel";
 
 export default function HomePage() {
   const { isPresenting, stopPresentation } = usePresentationStore();
@@ -79,6 +80,9 @@ export default function HomePage() {
               <ShapeStylePanel shape={selectedShape} />
             </div>
           )}
+          <div className="absolute top-4 right-4 z-50">
+            <TextStylePanel />
+          </div>
         </div>
       </div>
     </main>

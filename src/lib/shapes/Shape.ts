@@ -9,12 +9,6 @@ export type ShapeType =
   | "curve"
   | "text";
 
-export interface ShapeProps {
-  id: string;
-  type: ShapeType;
-  isSelected: boolean;
-}
-
 export abstract class Shape {
   id: string;
   type: ShapeType;

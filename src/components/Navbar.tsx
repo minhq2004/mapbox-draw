@@ -12,11 +12,19 @@ import {
 import { useDrawingStore } from "@/store/useDrawingStore";
 import type { DrawingTool } from "@/store/useDrawingStore";
 import { usePresentationStore } from "@/store/usePresentationStore";
-import { TextStylePanel } from "./TextStylePanel";
+import { useMapStore } from "@/store/useMapStore";
 
 export const Navbar = () => {
   const { activeTool, setActiveTool } = useDrawingStore();
   const { startPresentation } = usePresentationStore();
+  const { isViewportLocked, toggleViewportLock } = useMapStore();
+
+  const handlePresent = () => {
+    if (!isViewportLocked) {
+      toggleViewportLock();
+    }
+    startPresentation();
+  };
 
   const handleToolSelect = (tool: DrawingTool) => {
     setActiveTool(tool);
@@ -81,15 +89,11 @@ export const Navbar = () => {
         />
       </div>
 
-      <div className="absolute top-16 right-4 z-50">
-        <TextStylePanel />
-      </div>
-
       {/* Function buttons */}
       <div className="flex space-x-2">
         <button
           className="px-3 py-1 bg-[#f3353d] text-white rounded hover:bg-[#f3353edd] flex gap-2 items-center font-bold"
-          onClick={startPresentation}
+          onClick={handlePresent}
         >
           <PlayIcon className="size-5"></PlayIcon>
           Present

@@ -90,6 +90,14 @@ export class ShapeManager {
     return [...this.shapes.values()];
   }
 
+  setShapes(newShapes: Shape[]): void {
+    this.shapes.clear();
+    for (const shape of newShapes) {
+      this.shapes.set(shape.id, shape);
+    }
+    this.notifyChange();
+  }
+
   drawHandlesForSelectedShape(): void {
     if (!this.selectedShapeId) return;
 
