@@ -241,7 +241,9 @@ export const ShapeList = () => {
 
   return (
     <div className="p-4 space-y-2 ">
-      <h2 className="font-bold mb-2 text-black">Layers</h2>
+      <h2 className="font-bold mb-2 text-black">
+        Layers: {shapeManager?.getAllShapes().length} shape
+      </h2>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

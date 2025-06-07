@@ -39,10 +39,10 @@ export const TextStylePanel = () => {
       className="bg-white p-4 w-full text-black"
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <h3 className="font-bold mb-2">Text Style</h3>
+      <h3 className="font-bold mb-2">Text style</h3>
 
       <div className="mb-4">
-        <label className="block mb-1">Font Size</label>
+        <label className="block mb-1">Font size</label>
         <div className="flex items-center gap-2">
           <select
             className="border px-1 py-1"

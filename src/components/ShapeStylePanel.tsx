@@ -55,15 +55,15 @@ export const ShapeStylePanel = ({ shape }: { shape: Shape }) => {
 
   return (
     <div className="p-4 bg-white w-full text-black">
-      <h3 className="font-bold mb-2">Style</h3>
+      <h3 className="font-bold mb-2">Shape style</h3>
 
       <div className="mb-3">
-        <label className="block mb-1">Stroke Color</label>
+        <label className="block mb-1">Stroke color</label>
         <SketchPicker color={strokeColor} onChange={handleColorChange} />
       </div>
 
       <div className="mb-3 items-center">
-        <label className="block mb-1">Stroke Width</label>
+        <label className="block mb-1">Stroke width</label>
         <div className="flex items-center gap-2">
           <select
             className="border px-1 py-1"
