@@ -61,8 +61,24 @@ export default function HomePage() {
       <div className="flex flex-1 h-0">
         {/* SlideList bên trái */}
         {!isPresenting && (
-          <div className="flex-1/5 border-r border-gray-300 bg-white overflow-y-auto">
-            <ShapeList />
+          <div className="flex-1/4 border-r border-gray-300 bg-white overflow-y-auto flex flex-col">
+            <div
+              className={
+                selectedShape ? "h-full overflow-y-auto flex-2/3" : "flex-1"
+              }
+            >
+              <ShapeList />
+            </div>
+            {selectedShape && (
+              <div className="border border-t-2 border-e-gray-600"></div>
+            )}
+
+            <div className="flex-1/3 overflow-auto mx-auto">
+              {selectedShape && selectedShape.type != "text" && (
+                <ShapeStylePanel shape={selectedShape} />
+              )}
+              <TextStylePanel />
+            </div>
           </div>
         )}
         {/* Map chiếm phần còn lại */}
@@ -75,14 +91,6 @@ export default function HomePage() {
           }
         >
           <Map />
-          {selectedShape && selectedShape.type != "text" && (
-            <div className="absolute top-4 right-4 z-50">
-              <ShapeStylePanel shape={selectedShape} />
-            </div>
-          )}
-          <div className="absolute top-4 right-4 z-50">
-            <TextStylePanel />
-          </div>
         </div>
       </div>
     </main>

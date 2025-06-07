@@ -54,7 +54,7 @@ export const ShapeStylePanel = ({ shape }: { shape: Shape }) => {
   const commonStrokeWidths = [1, 2, 4, 8, 12, 16, 24, 32, 48, 72, 96];
 
   return (
-    <div className="p-4 bg-white border rounded w-64 text-black shadow-2xl">
+    <div className="p-4 bg-white w-full text-black">
       <h3 className="font-bold mb-2">Style</h3>
 
       <div className="mb-3">

@@ -36,7 +36,7 @@ export const TextStylePanel = () => {
 
   return (
     <div
-      className="bg-white p-4 border rounded shadow z-50 w-64 text-black"
+      className="bg-white p-4 w-full text-black"
       onMouseDown={(e) => e.stopPropagation()}
     >
       <h3 className="font-bold mb-2">Text Style</h3>
