@@ -169,6 +169,11 @@ export const Map = () => {
               {isViewportLocked ? <FaUnlock /> : <FaLock />}
             </button>
           )}
+          {!isViewportLocked && (
+            <div className="fixed bottom-6 right-6 z-50 bg-black/80 text-white px-4 py-2 rounded shadow-lg text-sm pointer-events-none select-none">
+              Lock viewport to enable drawing
+            </div>
+          )}
         </div>
       </div>
     </div>
