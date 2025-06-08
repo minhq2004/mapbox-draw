@@ -4,15 +4,14 @@ import { useMapStore } from "@/store/useMapStore";
 import { useMapDrawingTools } from "@/hooks/useMapDrawingTools";
 import { usePresentationStore } from "@/store/usePresentationStore";
 import { FaLock, FaUnlock } from "react-icons/fa";
+import { ShapeManager } from "@/lib/shapes/ShapeManager";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 
 export const Map = () => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-
-  const { isViewportLocked, toggleViewportLock, shapeManager } = useMapStore();
-  const { isPresenting, currentStep, setStep } = usePresentationStore();
+  const { setShapeManager } = useMapStore();
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -21,18 +20,16 @@ export const Map = () => {
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/standard",
-      center: [106.8272, 15.8231], // [longitude, latitude]
-      zoom: 5,
+      center: [105.828998, 20.900033], // [longitude, latitude]
+      zoom: 10,
       preserveDrawingBuffer: true,
     });
 
-    if (isViewportLocked && mapRef.current) {
-      mapRef.current.dragPan.disable();
-      mapRef.current.scrollZoom.disable();
-      mapRef.current.doubleClickZoom.disable();
-      mapRef.current.touchZoomRotate.disable();
-      mapRef.current.touchPitch.disable();
-    }
+    // Khi map đã sẵn sàng, khởi tạo ShapeManager với map
+    mapRef.current.on("load", () => {
+      const sm = new ShapeManager(mapRef.current!);
+      setShapeManager(sm);
+    });
 
     return () => {
       if (mapRef.current) {
@@ -41,12 +38,14 @@ export const Map = () => {
     };
   }, [mapRef.current]);
 
+  const { isViewportLocked, toggleViewportLock, shapeManager } = useMapStore();
+  const { isPresenting, currentStep, setStep } = usePresentationStore();
+
   useMapDrawingTools();
 
   // Khi bắt đầu hoặc kết thúc trình chiếu, cập nhật trạng thái shape
   useEffect(() => {
     if (!mapRef.current || !shapeManager) return;
-
     const all = shapeManager.getAllShapes();
 
     if (isPresenting) {
@@ -122,6 +121,12 @@ export const Map = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [isPresenting, currentStep, shapeManager]);
 
+  // Vẽ tất cả shape lên map mỗi khi vào trang hoặc map/shapeManager thay đổi
+  useEffect(() => {
+    if (!mapRef.current || !shapeManager) return;
+    shapeManager.getAllShapes().forEach((shape) => shape.draw(mapRef.current!));
+  }, [mapRef.current, shapeManager]);
+
   // Toggle viewport lock
   const handleToggleViewport = () => {
     if (!mapRef.current) return;
@@ -161,7 +166,7 @@ export const Map = () => {
             <button
               onClick={handleToggleViewport}
               className="px-4 py-2 bg-white text-[#f3353d] rounded shadow"
-              title={isViewportLocked ? "Unlock" : "Lock"}
+              title={isViewportLocked ? "Unlock viewport" : "Lock viewport"}
             >
               {isViewportLocked ? <FaUnlock /> : <FaLock />}
             </button>

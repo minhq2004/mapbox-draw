@@ -1,5 +1,3 @@
-"use client";
-
 import { create } from "zustand";
 import { ShapeManager } from "../lib/shapes/ShapeManager";
 
@@ -17,7 +15,7 @@ export const useMapStore = create<MapState>((set) => ({
   shapeManager: null,
   setMap: (map) => set({ map }),
   setShapeManager: (sm) => set({ shapeManager: sm }),
-  isViewportLocked: true,
+  isViewportLocked: false,
   toggleViewportLock: () =>
     set((state) => ({ isViewportLocked: !state.isViewportLocked })),
 }));

@@ -39,6 +39,7 @@ export const useCircleTool = (
         center,
         radius,
       });
+      circle.strokeColor = "#888";
       shapeManager.addShape(circle);
       tempCircleRef.current = circle;
     };

@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useDrawingStore } from "../store/useDrawingStore";
 import { useMapStore } from "../store/useMapStore";
 import { ShapeManager } from "../lib/shapes/ShapeManager";
-
 import { useRectangleTool } from "./useRectangleTool";
 import { useCircleTool } from "./useCircleTool";
 import { useArrowTool } from "./useArrowTool";
@@ -15,7 +14,9 @@ import { usePresentationStore } from "@/store/usePresentationStore";
 export const useMapDrawingTools = () => {
   const { activeTool } = useDrawingStore();
   const { isPresenting } = usePresentationStore();
-  const { map, shapeManager, setShapeManager } = useMapStore();
+
+  const { map, shapeManager, setShapeManager, isViewportLocked } =
+    useMapStore();
 
   useEffect(() => {
     if (map && !shapeManager) {
@@ -24,7 +25,7 @@ export const useMapDrawingTools = () => {
     }
   }, [map, shapeManager, setShapeManager]);
 
-  const toolEnabled = !isPresenting;
+  const toolEnabled = !isPresenting && isViewportLocked;
 
   useRectangleTool(
     map,
