@@ -238,55 +238,6 @@ export const ShapeList = () => {
     setShapes([...shapes]);
   };
 
-  // Hàm log thông tin shape
-  const handleLogShapes = () => {
-    if (!shapeManager) return;
-    const all = shapeManager.getAllShapes();
-    const log = all.map((s) => {
-      let coords: any = undefined;
-      let extra: any = {};
-
-      if (s.type === "rectangle") {
-        const rect = s as Rectangle;
-        coords = rect.data.coordinates;
-      } else if (s.type === "arrow") {
-        const arrow = s as Arrow;
-        coords = arrow.data.anchors;
-      } else if (s.type === "polyline") {
-        const poly = s as Polyline;
-        coords = poly.data.coordinates;
-      } else if (s.type === "curve") {
-        const curve = s as Curve;
-        coords = curve.data.controlPoints;
-      } else if (s.type === "circle") {
-        const circle = s as Circle;
-        coords = {
-          center: circle.data.center,
-          radius: circle.data.radius,
-        };
-      } else if (s.type === "text") {
-        const text = s as Text;
-        coords = text.data.position;
-        extra.content = text.data?.content ?? text.data.content;
-        extra.color = text.data?.color ?? text.strokeColor;
-        extra.fontSize = text.data?.fontSize;
-      }
-
-      return {
-        id: s.id,
-        type: s.type,
-        coordinates: coords,
-        strokeColor: s.strokeColor,
-        strokeWidth: s.strokeWidth,
-        ...extra,
-        presentationOrder: s.presentationOrder,
-      };
-    });
-    navigator.clipboard.writeText(JSON.stringify(log, null, 2));
-    console.log("Current shapes:", log);
-    alert("Đã copy log shapes vào clipboard!");
-  };
-
   const maxOrder = Math.max(
     0,
     ...shapes
