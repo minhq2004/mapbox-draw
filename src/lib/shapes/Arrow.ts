@@ -22,50 +22,47 @@ export class Arrow extends Shape {
   }
 
   getGeoJSONGeometry(): MultiLineString {
-    const { anchors, headLength = 0.2, headWidth = 0.2 } = this.data;
+    const { anchors, headLength = 3, headWidth = 2 } = this.data;
     const [p0, p1, p2] = anchors;
     const curve = getQuadraticBezierPoints(p0, p1, p2, 30);
     const lineCoords = curve.map(([lng, lat]) => [lng, lat]);
 
-    // Scale head theo linewidth
-    const scale = this.strokeWidth || 1;
-    const scaledHeadLength = headLength * scale * 0.3; // 1.5 là hệ số, bạn có thể chỉnh
-    const scaledHeadWidth = headWidth * scale * 0.3; // 1.2 là hệ số, bạn có thể chỉnh
-
-    // Tính toán đầu mũi tên (arrow head)
+    // Đoạn cuối của arrow
     const [bx, by] = curve[curve.length - 2];
     const [tx, ty] = curve[curve.length - 1];
+
+    // Tính chiều dài đoạn cuối (theo kinh độ/vĩ độ)
+    const dx = tx - bx;
+    const dy = ty - by;
+    const len = Math.sqrt(dx * dx + dy * dy);
+
+    // Độ dài và rộng đầu mũi tên tỷ lệ với đoạn cuối
+    const arrowLen = headLength * len;
+    const arrowWid = headWidth * len;
+
     const angle = Math.atan2(ty - by, tx - bx);
 
     // Hai nhánh chữ V của đầu mũi tên
     const left: [number, number] = [
-      tx -
-        scaledHeadLength * Math.cos(angle) +
-        scaledHeadWidth * Math.sin(angle),
-      ty -
-        scaledHeadLength * Math.sin(angle) -
-        scaledHeadWidth * Math.cos(angle),
+      tx - arrowLen * Math.cos(angle) + arrowWid * Math.sin(angle),
+      ty - arrowLen * Math.sin(angle) - arrowWid * Math.cos(angle),
     ];
     const right: [number, number] = [
-      tx -
-        scaledHeadLength * Math.cos(angle) -
-        scaledHeadWidth * Math.sin(angle),
-      ty -
-        scaledHeadLength * Math.sin(angle) +
-        scaledHeadWidth * Math.cos(angle),
+      tx - arrowLen * Math.cos(angle) - arrowWid * Math.sin(angle),
+      ty - arrowLen * Math.sin(angle) + arrowWid * Math.cos(angle),
     ];
 
     return {
       type: "MultiLineString",
       coordinates: [
-        lineCoords, // thân
-        [left, [tx, ty], right],
+        lineCoords,
+        [left, [tx, ty], right], // đầu mũi tên liền mạch
       ],
     };
   }
 
   draw(map: mapboxgl.Map): void {
-    const geojson = this.toGeoJSON();
+    const geojson = this.getGeoJSONGeometry();
 
     if (!map.getSource(this.sourceId)) {
       map.addSource(this.sourceId, {
