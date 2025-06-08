@@ -127,12 +127,9 @@ export const Map = () => {
     shapeManager.getAllShapes().forEach((shape) => shape.draw(mapRef.current!));
   }, [mapRef.current, shapeManager]);
 
-  // Toggle viewport lock
-  const handleToggleViewport = () => {
+  useEffect(() => {
     if (!mapRef.current) return;
-
-    if (!isViewportLocked) {
-      // Lock viewport - disable interactions
+    if (isViewportLocked) {
       mapRef.current.dragPan.disable();
       mapRef.current.scrollZoom.disable();
       mapRef.current.doubleClickZoom.disable();
@@ -142,7 +139,6 @@ export const Map = () => {
       mapRef.current.dragRotate.disable();
       mapRef.current.keyboard.disable();
     } else {
-      // Unlock viewport - enable interactions
       mapRef.current.dragPan.enable();
       mapRef.current.scrollZoom.enable();
       mapRef.current.doubleClickZoom.enable();
@@ -152,8 +148,10 @@ export const Map = () => {
       mapRef.current.dragRotate.enable();
       mapRef.current.keyboard.enable();
     }
+  }, [isViewportLocked]);
 
-    // Update state in store
+  // Toggle viewport lock
+  const handleToggleViewport = () => {
     toggleViewportLock();
   };
 
