@@ -66,7 +66,7 @@ export const useSelectTool = (
 
       if (isCmd && e.key.toLowerCase() === "v" && copiedShapeRef.current) {
         const shape = copiedShapeRef.current.clone();
-        shape.moveByDelta(0.25, -0.25, map!);
+        shape.moveByDelta(0.025, -0.025, map!);
         shapeManager.addShape(shape);
         shapeManager.selectShape(shape.id);
         selectedIdRef.current = shape.id;

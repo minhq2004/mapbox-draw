@@ -86,7 +86,6 @@ export class Circle extends Shape {
 
   getBoundingBoxHandles(): mapboxgl.LngLat[] {
     const { center, radius } = this.data;
-    // Nếu là elip, có thể có rx, ry. Ở đây mặc định là hình tròn.
     const rx = this.data.rx ?? radius;
     const ry = this.data.ry ?? radius;
     const dLngX = rx / 111320;
@@ -139,7 +138,6 @@ export class Circle extends Shape {
       case 3: // bottom-right
       case 5: // bottom-left
       case 7: // top-left
-        // Scale đều hai trục, giữ hình tròn
         rx = Math.abs(to.lng - center.lng) * 111320;
         ry = Math.abs(to.lat - center.lat) * 110540;
         const r = Math.max(rx, ry);
@@ -148,7 +146,6 @@ export class Circle extends Shape {
         break;
     }
 
-    // Lưu lại rx, ry (nếu là hình tròn thì rx=ry)
     this.data.rx = rx;
     this.data.ry = ry;
     this.data.radius = Math.max(rx, ry);
