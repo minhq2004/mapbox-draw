@@ -38,11 +38,13 @@ export const Navbar = () => {
     } else if (tool === "circle") {
       setHint("Select 1 point and drag to create a circle");
     } else if (tool === "polyline") {
-      setHint("Select each point to create a polyline.");
+      setHint("Select each point to create a polyline. Press enter to finish");
     } else if (tool === "curve") {
-      setHint("Select each point to create a curve");
+      setHint("Select each point to create a curve. Press enter to finish");
     } else if (tool === "text") {
-      setHint("Drag and drop an area to create a text box");
+      setHint(
+        "Drag and drop an area to create a text box. Press enter when finish typing"
+      );
     } else {
       setHint(null);
     }
